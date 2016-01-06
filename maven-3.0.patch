@@ -1,0 +1,169 @@
+From 744bd4ee3737dabbcbe7d6019d4dedf352dff003 Mon Sep 17 00:00:00 2001
+From: Alexander Kurtakov
+Date: Tue, 2 Dec 2014 16:32:52 +0200
+Subject: Use maven-plugin-tools' java 5 annotations in eclipse-cbi-plugin.
+
+Change-Id: Ibcf458c10556a7615aff0701124e60f5cde48417
+---
+ eclipse-cbi-plugin/pom.xml                         |  6 ++++++
+ .../cbi/mojo/AbstractPluginScannerMojo.java        |  7 +++---
+ .../eclipse/cbi/mojo/GenerateAPIBuildXMLMojo.java  | 25 ++++++----------------
+ .../org/eclipse/cbi/mojo/PluginVersionsMojo.java   |  8 +++----
+ .../org/eclipse/cbi/mojo/TestPropertiesMojo.java   |  8 +++----
+ 5 files changed, 25 insertions(+), 29 deletions(-)
+
+diff --git a/eclipse-cbi-plugin/pom.xml b/eclipse-cbi-plugin/pom.xml
+index cb2fe2e..a2f9428 100644
+--- a/eclipse-cbi-plugin/pom.xml
++++ b/eclipse-cbi-plugin/pom.xml
+@@ -43,5 +43,11 @@
+       <artifactId>decentxml</artifactId>
+       <version>1.4</version>
+     </dependency>
++    <dependency>
++      <groupId>org.apache.maven.plugin-tools</groupId>
++      <artifactId>maven-plugin-annotations</artifactId>
++      <version>3.3</version>
++      <scope>provided</scope>
++    </dependency>
+   </dependencies>
+ </project>
+diff --git a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/AbstractPluginScannerMojo.java b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/AbstractPluginScannerMojo.java
+index b7b1a01..7bb08f4 100644
+--- a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/AbstractPluginScannerMojo.java
++++ b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/AbstractPluginScannerMojo.java
+@@ -21,6 +21,8 @@ import java.util.Properties;
+ 
+ import org.apache.maven.plugin.AbstractMojo;
+ import org.apache.maven.plugin.MojoExecutionException;
++import org.apache.maven.plugins.annotations.Component;
++import org.apache.maven.plugins.annotations.Parameter;
+ import org.eclipse.tycho.core.osgitools.BundleReader;
+ import org.eclipse.tycho.core.osgitools.OsgiManifest;
+ import org.eclipse.tycho.core.osgitools.OsgiManifestParserException;
+@@ -31,12 +33,11 @@ abstract class AbstractPluginScannerMojo
+ {
+     /**
+      * igorf: as of 2012-01-05, generated repository location is hardcoded to target/repository in tycho
+-     * 
+-     * @parameter default-value="${project.build.directory}/repository"
+      **/
++	@Parameter(defaultValue="${project.build.directory}/repository")
+     protected File repository;
+ 
+-    /** @component */
++	@Component
+     protected BundleReader bundleReader;
+ 
+     @Override
+diff --git a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/GenerateAPIBuildXMLMojo.java b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/GenerateAPIBuildXMLMojo.java
+index 694c026..9fec597 100644
+--- a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/GenerateAPIBuildXMLMojo.java
++++ b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/GenerateAPIBuildXMLMojo.java
+@@ -24,6 +24,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
+ 
+ import org.apache.maven.plugin.AbstractMojo;
+ import org.apache.maven.plugin.MojoExecutionException;
++import org.apache.maven.plugins.annotations.Component;
++import org.apache.maven.plugins.annotations.LifecyclePhase;
++import org.apache.maven.plugins.annotations.Mojo;
++import org.apache.maven.plugins.annotations.Parameter;
+ import org.apache.maven.project.MavenProject;
+ import org.eclipse.tycho.ArtifactKey;
+ import org.eclipse.tycho.core.BundleProject;
+@@ -37,31 +41,16 @@ import org.w3c.dom.Document;
+ import org.w3c.dom.Node;
+ import org.w3c.dom.NodeList;
+ 
+-/**
+- * @goal generate-api-build-xml
+- * @phase generate-sources
+- */
++@Mojo( name = "generate-api-build-xml", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+ public class GenerateAPIBuildXMLMojo extends AbstractMojo {
+ 	
+ 	private static final String API_BUILD_XML_FILE = ".apibuild.xml";
+ 	private static final String API_NATURE = "org.eclipse.pde.api.tools.apiAnalysisNature";
+ 	
+-    /**
+-     * @parameter default-value="${project}"
+-     * @required
+-     * @readonly
+-     */
++	@Parameter(defaultValue="${project}", required=true, readonly=true)
+     protected MavenProject project;
+ 
+-    /**
+-     * @parameter property="buildQualifier"
+-     * @readonly
+-     */
+-    private String qualifier;
+-
+-    /**
+-     * @component role="org.eclipse.tycho.core.TychoProject"
+-     */
++	@Component(role=TychoProject.class)
+     private Map<String, TychoProject> projectTypes;
+     
+ 	@Override
+diff --git a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/PluginVersionsMojo.java b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/PluginVersionsMojo.java
+index ef368a8..e3e2a0e 100644
+--- a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/PluginVersionsMojo.java
++++ b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/PluginVersionsMojo.java
+@@ -14,15 +14,15 @@ import java.io.File;
+ import java.util.Map;
+ import java.util.Properties;
+ 
++import org.apache.maven.plugins.annotations.Mojo;
++import org.apache.maven.plugins.annotations.Parameter;
+ import org.eclipse.tycho.core.osgitools.OsgiManifest;
+ 
+-/**
+- * @goal plugin-versions
+- */
++@Mojo(name="plugin-versions")
+ public class PluginVersionsMojo
+     extends AbstractPluginScannerMojo
+ {
+-    /** @parameter default-value="${project.build.directory}/plugin-versions.properties" */
++	@Parameter(defaultValue="${project.build.directory}/plugin-versions.properties")
+     protected File destination;
+ 
+     @Override
+diff --git a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/TestPropertiesMojo.java b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/TestPropertiesMojo.java
+index 12a46ec..5e6cc68 100644
+--- a/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/TestPropertiesMojo.java
++++ b/eclipse-cbi-plugin/src/main/java/org/eclipse/cbi/mojo/TestPropertiesMojo.java
+@@ -24,6 +24,8 @@ import java.util.Set;
+ import java.util.jar.JarFile;
+ import java.util.zip.ZipEntry;
+ 
++import org.apache.maven.plugins.annotations.Mojo;
++import org.apache.maven.plugins.annotations.Parameter;
+ import org.eclipse.osgi.util.ManifestElement;
+ import org.eclipse.tycho.ArtifactKey;
+ import org.eclipse.tycho.DefaultArtifactKey;
+@@ -37,9 +39,7 @@ import de.pdark.decentxml.Element;
+ import de.pdark.decentxml.XMLIOSource;
+ import de.pdark.decentxml.XMLParser;
+ 
+-/**
+- * @goal test-properties
+- */
++@Mojo(name="test-properties")
+ public class TestPropertiesMojo
+     extends AbstractPluginScannerMojo
+ {
+@@ -73,7 +73,7 @@ public class TestPropertiesMojo
+ 
+     private static XMLParser parser = new XMLParser();
+ 
+-    /** @parameter default-value="${project.build.directory}/test.properties" */
++    @Parameter(defaultValue="${project.build.directory}/test.properties")
+     protected File destination;
+ 
+     @Override
+-- 
+cgit v0.11.2-3-g2eb4
+
+
